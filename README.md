@@ -2,7 +2,7 @@ BNF and interpreter rules
 Maximum length allowed for calculation: 50.
 Overflow handling: showing error message on screen.
 Maximum length allowed for program code: 30.
- Overflow handing: executing only the first 30 code lines.
+Overflow handing: executing only the first 30 code lines.
 Maximum variable names length: 3.
 Overflow handling: showing error message on screen.
 Variables must contain letters only.
