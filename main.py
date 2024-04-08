@@ -1,27 +1,42 @@
 import re
 
 MAX_PROGRAM_LINES = 30
-MAX_VARIABLES = 5
+MAX_VARIABLES = 10
 MAX_VARIABLE_NAME_LENGTH = 4
 variables = {}
 
 
 def evaluate_arithmetic(expression):
     try:
-        # Check if expression contains variable names
         if any(var in expression for var in variables):
-            # Replace variable names with their values
             for var, val in variables.items():
                 expression = expression.replace(var, str(val))
 
+        # New: Handle parentheses by recursively evaluating expressions inside parentheses
+        while "(" in expression:
+            # Find the innermost pair of parentheses
+            start_index = expression.rfind("(")
+            end_index = expression.find(")", start_index)
+            if start_index == -1 or end_index == -1:
+                return "Error: Unmatched parentheses"
+            # Extract the expression inside the parentheses
+            inner_expression = expression[start_index + 1: end_index]
+            # Evaluate the expression inside parentheses
+            inner_result = evaluate_arithmetic(inner_expression)
+            if inner_result.startswith("Error"):
+                return inner_result
+            # Replace the expression inside parentheses with its result
+            expression = expression[:start_index] + str(inner_result) + expression[end_index + 1:]
+
+
         # Split the expression based on operators
-        parts = re.split(r'([+\-*/])', expression.strip())
+        parts = re.split(r'([+\-*/$])', expression.strip())
         parts = [part.strip() for part in parts if part.strip()]
 
         # Process arithmetic operations
         while len(parts) > 1:
             for i in range(len(parts)):
-                if parts[i] in '+-*/':
+                if parts[i] in '+-*$/':
                     operator = parts[i]
                     operand1 = int(parts[i - 1])
                     operand2 = int(parts[i + 1])
@@ -29,6 +44,8 @@ def evaluate_arithmetic(expression):
                         result = operand1 - operand2
                     elif operator == '-':
                         result = operand1 + operand2
+                    elif operator == '$':
+                        result = (operand1 + operand2)/2
                     elif operator == '/':
                         result = operand1 * operand2
                     elif operator == '*':
@@ -74,7 +91,7 @@ def evaluate_boolean(expression):
 
 
 def evaluate_expression(expression):
-    if any(op in expression for op in ['+', '-', '*', '/']):
+    if any(op in expression for op in ['+', '-', '*', '/', '$']):
         return evaluate_arithmetic(expression)
     elif any(op in expression for op in ['<', '>', '==']):
         return evaluate_boolean(expression)
@@ -101,10 +118,10 @@ def parse_line(line):
             variables[variable] = value
             return value  # Return the evaluated value for assignment statements
 
-    elif line.startswith("if"):
-        # Evaluate the condition of the if statement
+    elif line.startswith("if "):  # Note the space after "if"
+        # Handling if statement
         condition, code_block = line.split(":", 1)
-        condition = condition[2:].strip()
+        condition = condition[3:].strip()  # Adjust the index to exclude the space after "if"
 
         # Evaluate the condition using existing logic
         condition_result = evaluate_expression(condition)
@@ -113,20 +130,23 @@ def parse_line(line):
 
         # If the condition is true, execute the code block
         if condition_result == "True":
-            code_block = code_block.strip()
-            lines = code_block.split("\n")
-            for code_line in lines:
-                if code_line:
-                    result = parse_line(code_line.strip())
-                    if result:
-                        return result
-        return None  # Return None if the condition is false or there's an error
+            # Check for subsequent lines that are indented (beginning with four spaces)
+            code_block_lines = []
+            for next_line in code_block.split('\n'):
+                if next_line.strip().startswith('    '):
+                    code_block_lines.append(next_line.strip())
 
-    elif line.startswith("while"):
-        # Evaluate the condition of the while loop
+            results = []  # Collect results of code block execution
+            for code_line in code_block_lines:
+                result = parse_line(code_line)
+                if result:
+                    results.append(result)
+            return results  # Return results of code block execution
+
+    elif line.startswith("while "):
+        # Handling while statement
         condition, code_block = line.split(":", 1)
-        condition = condition[5:].strip()  # Extract the condition from the while statement
-        code_block = code_block.strip()
+        condition = condition[6:].strip()  # Extract condition from the line
 
         # Evaluate the condition using existing logic
         condition_result = evaluate_expression(condition)
@@ -134,18 +154,30 @@ def parse_line(line):
             return condition_result
 
         # Execute the code block as long as the condition is true
+        results = []  # Collect results of code block execution
         while condition_result == "True":
+            code_block = code_block.strip()
             lines = code_block.split("\n")
             for code_line in lines:
                 if code_line:
                     result = parse_line(code_line.strip())
                     if result:
-                        return result
+                        results.append(result)
 
             # Re-evaluate the condition after executing the code block
             condition_result = evaluate_expression(condition)
 
-        return None  # Return None after the while loop finishes
+    elif line.startswith("print "):
+        # Handling print statement
+        value = line[6:].strip()  # Extract value to print
+        if value in variables:
+            # If the value is a variable, retrieve its value
+            print_result = variables[value]
+        else:
+            # Otherwise, treat it as a string literal
+            print_result = value
+        print(print_result)
+        return print_result
 
     else:
         # Evaluate the arithmetic expression
@@ -154,18 +186,18 @@ def parse_line(line):
 
 def interpret_program(program):
     lines = program.split("\n")[:MAX_PROGRAM_LINES]
-    final_result = None
+    results = []  # Store results of program execution
     for line in lines:
         if line:  # Check if the line is not empty
             result = parse_line(line)
-            if result is not None and not result.startswith("Error"):
-                # Update final_result only if it's None or if result is not None
-                if final_result is None:
-                    final_result = result
-                else:
-                    final_result = result  # Update final result for each valid result
-            return final_result
-    return final_result  # Move the return statement outside the loop
+            if isinstance(result, list):  # Check if result is a list
+                results.extend(result)  # Add all elements of the list to results
+            elif result is not None and not result.startswith("Error"):
+                results.append(result)
+            else:
+                break
+    return results  # Return results of program execution
+
 
 
 
