@@ -43,7 +43,7 @@ Blocks and commands:
 
 arithmetic_ expression > ::= <term> <arithmetic_sign> <term> >
 
-<nested_if> :: = <if_statement> | " "<if_statement> | "  "<if_statement> |                        "   "<if_statement>
+<nested_if> :: = <if_statement> | " "<if_statement> | "  "<if_statement> | " "<if_statement>
 
 if_statement> ::= "if " <boolean_expression> ":" <statements>>
 
