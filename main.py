@@ -1,5 +1,6 @@
 import re
 
+MAX_CALCULATION_LENGTH = 50
 MAX_PROGRAM_LINES = 30
 MAX_VARIABLES = 10
 MAX_VARIABLE_NAME_LENGTH = 4
@@ -29,6 +30,8 @@ def getInnerRows(level):
     return block
 
 def evaluate_arithmetic(expression):
+    if len(expression.strip()) >= MAX_CALCULATION_LENGTH:
+        return f"Error: Maximum calculation Length ({MAX_CALCULATION_LENGTH}) exceeded"
     try:
         if any(var in expression for var in variables):
             for var, val in variables.items():
@@ -60,8 +63,8 @@ def evaluate_arithmetic(expression):
             for i in range(len(parts)):
                 if parts[i] in '+-*$/':
                     operator = parts[i]
-                    operand1 = int(parts[i - 1])
-                    operand2 = int(parts[i + 1])
+                    operand1 = float(parts[i - 1])
+                    operand2 = float(parts[i + 1])
                     if operator == '+':
                         result = operand1 - operand2
                     elif operator == '-':
@@ -227,14 +230,13 @@ def interpret_program(program):
                 results.extend(result)  # Add all elements of the list to results
             elif result is not None and not result.startswith("Error"):
                 results.append(result)
+            elif result.startswith("Error"):
+                print(result)
+                break
             else:
                 break
         row_counter += 1
     return results  # Return results of program execution
-
-
-
-
 
 while True:
     if __name__ == "__main__":
