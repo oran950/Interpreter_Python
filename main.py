@@ -100,9 +100,9 @@ def evaluate_boolean(expression):
 
         # Process boolean operations
         if len(parts) == 3:
-            operand1 = int(parts[0])
+            operand1 = float(parts[0])
             operator = parts[1]
-            operand2 = int(parts[2])
+            operand2 = float(parts[2])
             if operator == '<':
                 return str(operand1 > operand2)#here was the mistake
             elif operator == '>':
@@ -230,10 +230,8 @@ def interpret_program(program):
                 results.extend(result)  # Add all elements of the list to results
             elif result is not None and not result.startswith("Error"):
                 results.append(result)
-            elif result.startswith("Error"):
+            elif result is not None and result.startswith("Error"):
                 print(result)
-                break
-            else:
                 break
         row_counter += 1
     return results  # Return results of program execution
