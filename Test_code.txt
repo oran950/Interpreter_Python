@@ -1,0 +1,51 @@
+x == 5
+y == 8
+z == x + y
+print z
+
+x>5
+
+x<5
+
+x+1000
+
+x-1000
+
+x/1000
+
+d==4-4+50-(50-100)/100*10-1000
+
+c==500$400
+
+v==45*6789123
+
+
+
+if x>b:
+	if b<c:
+		if z>b:
+			print z
+
+a == 20
+b == 10
+c == a - b
+print c
+
+if c == 30
+    "print "C is equal to 30
+
+
+counter == 0
+while counter < 5:
+    print counter
+    counter == counter + 1
+
+
+counter == 0
+while counter < 5:
+	if counter<3:
+		print counter
+	counter==counter-1
+
+
+
