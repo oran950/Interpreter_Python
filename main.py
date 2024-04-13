@@ -5,6 +5,28 @@ MAX_VARIABLES = 10
 MAX_VARIABLE_NAME_LENGTH = 4
 variables = {}
 
+lines = []
+row_counter = 0
+current_row = 0
+
+def getInnerRows(level):
+    global lines
+    global row_counter
+    global current_row
+    block = []
+    counter = 0
+    start = row_counter if level == 1 else current_row
+    prev_line = None
+    for line in lines[start + 1:]:
+        spacesNum = len(line) - len(line.lstrip())
+        if spacesNum == level:
+            if prev_line is None or (prev_line is not None and ("if" in prev_line or "while" in prev_line) and counter == 0) or (prev_line is not None and ("if" not in prev_line and "while" not in prev_line) and counter != 0):
+                block.append(line)
+                counter += 1
+        prev_line = line
+    if level == 1:
+        row_counter += counter
+    return block
 
 def evaluate_arithmetic(expression):
     try:
@@ -99,8 +121,8 @@ def evaluate_expression(expression):
         return expression.strip()  # No evaluation needed for plain values
 
 
-def parse_line(line):
-    if "==" in line:
+def parse_line(line, level):
+    if "==" in line and "if" not in line:
         variable, expression = line.split("==")
         variable = variable.strip()
         expression = expression.strip()
@@ -118,10 +140,13 @@ def parse_line(line):
             variables[variable] = value
             return value  # Return the evaluated value for assignment statements
 
-    elif line.startswith("if "):  # Note the space after "if"
+    elif "if" in line:  # Note the space after "if"
+        line = line.strip()
         # Handling if statement
         condition, code_block = line.split(":", 1)
         condition = condition[3:].strip()  # Adjust the index to exclude the space after "if"
+        code_block = getInnerRows(level)
+        level += 1
 
         # Evaluate the condition using existing logic
         condition_result = evaluate_expression(condition)
@@ -132,21 +157,23 @@ def parse_line(line):
         if condition_result == "True":
             # Check for subsequent lines that are indented (beginning with four spaces)
             code_block_lines = []
-            for next_line in code_block.split('\n'):
-                if next_line.strip().startswith('    '):
-                    code_block_lines.append(next_line.strip())
+            for next_line in code_block:
+                code_block_lines.append(next_line.strip())
 
             results = []  # Collect results of code block execution
             for code_line in code_block_lines:
-                result = parse_line(code_line)
+                result = parse_line(code_line, level)
                 if result:
                     results.append(result)
             return results  # Return results of code block execution
 
-    elif line.startswith("while "):
+    elif "while" in line:
+        line = line.strip()
         # Handling while statement
         condition, code_block = line.split(":", 1)
         condition = condition[6:].strip()  # Extract condition from the line
+        code_block = getInnerRows(level)
+        level += 1
 
         # Evaluate the condition using existing logic
         condition_result = evaluate_expression(condition)
@@ -156,11 +183,9 @@ def parse_line(line):
         # Execute the code block as long as the condition is true
         results = []  # Collect results of code block execution
         while condition_result == "True":
-            code_block = code_block.strip()
-            lines = code_block.split("\n")
-            for code_line in lines:
+            for code_line in code_block:
                 if code_line:
-                    result = parse_line(code_line.strip())
+                    result = parse_line(code_line.strip(), level)
                     if result:
                         results.append(result)
 
@@ -185,17 +210,26 @@ def parse_line(line):
 
 
 def interpret_program(program):
+    global lines
+    global row_counter
+    global current_row
+    row_counter = 0
     lines = program.split("\n")[:MAX_PROGRAM_LINES]
     results = []  # Store results of program execution
-    for line in lines:
+    for i in range(len(lines)):
+        current_row = i
+        if i < row_counter:
+            continue
+        line = lines[i]
         if line:  # Check if the line is not empty
-            result = parse_line(line)
+            result = parse_line(line, 1)
             if isinstance(result, list):  # Check if result is a list
                 results.extend(result)  # Add all elements of the list to results
             elif result is not None and not result.startswith("Error"):
                 results.append(result)
             else:
                 break
+        row_counter += 1
     return results  # Return results of program execution
 
 
@@ -208,9 +242,10 @@ while True:
         program_input = ""
         line_count = 0
         while line_count < 30:
-            line = input().strip()
-            if not line:
+            line = input()
+            if len(line.strip()) == 0:
                 break
+            line = line.rstrip()
             program_input += line + "\n"
             line_count += 1
 
