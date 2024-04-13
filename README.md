@@ -1,5 +1,6 @@
 ```
-BNF and interpreter rules
+**BNF and interpreter rules
+**
 Maximum length allowed for calculation: 50.
 Overflow handling: showing error message on screen.
 Maximum length allowed for program code: 30.
